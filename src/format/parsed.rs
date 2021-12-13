@@ -126,9 +126,9 @@ fn set_if_consistent<T: PartialEq>(old: &mut Option<T>, new: T) -> ParseResult<(
     }
 }
 
-impl Default for Parsed {
-    fn default() -> Parsed {
-        Parsed {
+impl std::default::Default for Parsed {
+    fn default() -> Self {
+        Self {
             year: None,
             year_div_100: None,
             year_mod_100: None,
