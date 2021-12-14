@@ -56,7 +56,7 @@ pub const MAX_DATETIME: NaiveDateTime = NaiveDateTime { date: MAX_DATE, time: MA
 /// use chrono::{Datelike, Timelike, Weekday};
 ///
 /// assert_eq!(dt.weekday(), Weekday::Fri);
-/// assert_eq!(dt.num_seconds_from_midnight(), 33011);
+/// assert_eq!(dt.whole_seconds_from_midnight(), 33011);
 /// ```
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 pub struct NaiveDateTime {
@@ -149,7 +149,7 @@ impl NaiveDateTime {
             .to_i32()
             .and_then(|days| days.checked_add(719_163))
             .and_then(NaiveDate::from_num_days_from_ce_opt);
-        let time = NaiveTime::from_num_seconds_from_midnight_opt(secs as u32, nsecs);
+        let time = NaiveTime::from_whole_seconds_from_midnight_opt(secs as u32, nsecs);
         match (date, time) {
             (Some(date), Some(time)) => Some(NaiveDateTime { date: date, time: time }),
             (_, _) => None,
@@ -279,7 +279,7 @@ impl NaiveDateTime {
     pub fn timestamp(&self) -> i64 {
         const UNIX_EPOCH_DAY: i64 = 719_163;
         let gregorian_day = i64::from(self.date.num_days_from_ce());
-        let seconds_from_midnight = i64::from(self.time.num_seconds_from_midnight());
+        let seconds_from_midnight = i64::from(self.time.whole_seconds_from_midnight());
         (gregorian_day - UNIX_EPOCH_DAY) * 86_400 + seconds_from_midnight
     }
 

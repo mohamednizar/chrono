@@ -401,15 +401,15 @@ impl NaiveTime {
     /// ```
     /// use chrono::{NaiveTime, Timelike};
     ///
-    /// let t = NaiveTime::from_num_seconds_from_midnight(86164, 12_345_678);
+    /// let t = NaiveTime::from_whole_seconds_from_midnight(86164, 12_345_678);
     /// assert_eq!(t.hour(), 23);
     /// assert_eq!(t.minute(), 56);
     /// assert_eq!(t.second(), 4);
     /// assert_eq!(t.nanosecond(), 12_345_678);
     /// ```
     #[inline]
-    pub fn from_num_seconds_from_midnight(secs: u32, nano: u32) -> NaiveTime {
-        NaiveTime::from_num_seconds_from_midnight_opt(secs, nano).expect("invalid time")
+    pub fn from_whole_seconds_from_midnight(secs: u32, nano: u32) -> NaiveTime {
+        NaiveTime::from_whole_seconds_from_midnight_opt(secs, nano).expect("invalid time")
     }
 
     /// Makes a new `NaiveTime` from the number of seconds since midnight and nanosecond.
@@ -424,7 +424,7 @@ impl NaiveTime {
     /// ```
     /// use chrono::NaiveTime;
     ///
-    /// let from_nsecs_opt = NaiveTime::from_num_seconds_from_midnight_opt;
+    /// let from_nsecs_opt = NaiveTime::from_whole_seconds_from_midnight_opt;
     ///
     /// assert!(from_nsecs_opt(0, 0).is_some());
     /// assert!(from_nsecs_opt(86399, 999_999_999).is_some());
@@ -433,7 +433,7 @@ impl NaiveTime {
     /// assert!(from_nsecs_opt(86399, 2_000_000_000).is_none());
     /// ```
     #[inline]
-    pub fn from_num_seconds_from_midnight_opt(secs: u32, nano: u32) -> Option<NaiveTime> {
+    pub fn from_whole_seconds_from_midnight_opt(secs: u32, nano: u32) -> Option<NaiveTime> {
         if secs >= 86_400 || nano >= 2_000_000_000 {
             return None;
         }
@@ -999,15 +999,15 @@ impl Timelike for NaiveTime {
     /// ```
     /// use chrono::{NaiveTime, Timelike};
     ///
-    /// assert_eq!(NaiveTime::from_hms(1, 2, 3).num_seconds_from_midnight(),
+    /// assert_eq!(NaiveTime::from_hms(1, 2, 3).whole_seconds_from_midnight(),
     ///            3723);
-    /// assert_eq!(NaiveTime::from_hms_nano(23, 56, 4, 12_345_678).num_seconds_from_midnight(),
+    /// assert_eq!(NaiveTime::from_hms_nano(23, 56, 4, 12_345_678).whole_seconds_from_midnight(),
     ///            86164);
-    /// assert_eq!(NaiveTime::from_hms_milli(23, 59, 59, 1_000).num_seconds_from_midnight(),
+    /// assert_eq!(NaiveTime::from_hms_milli(23, 59, 59, 1_000).whole_seconds_from_midnight(),
     ///            86399);
     /// ```
     #[inline]
-    fn num_seconds_from_midnight(&self) -> u32 {
+    fn whole_seconds_from_midnight(&self) -> u32 {
         self.secs // do not repeat the calculation!
     }
 }

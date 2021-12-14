@@ -96,7 +96,7 @@ fn span_for_digits(digits: u16) -> u32 {
 /// Extension trait for rounding or truncating a DateTime by a Duration.
 ///
 /// # Limitations
-/// Both rounding and truncating are done via [`Duration::num_nanoseconds`] and
+/// Both rounding and truncating are done via [`Duration::subsec_nanoseconds`] and
 /// [`DateTime::timestamp_nanos`]. This means that they will fail if either the
 /// `Duration` or the `DateTime` are too big to represented as nanoseconds. They
 /// will also fail if the `Duration` is bigger than the timestamp.
@@ -256,7 +256,7 @@ pub enum RoundingError {
     /// ```
     DurationExceedsTimestamp,
 
-    /// Error when `Duration.num_nanoseconds` exceeds the limit.
+    /// Error when `Duration.subsec_nanoseconds` exceeds the limit.
     ///
     /// ``` rust
     /// # use chrono::{DateTime, DurationRound, Duration, RoundingError, TimeZone, Utc};
@@ -287,10 +287,10 @@ impl fmt::Display for RoundingError {
                 write!(f, "duration in nanoseconds exceeds timestamp")
             }
             RoundingError::DurationExceedsLimit => {
-                write!(f, "duration exceeds num_nanoseconds limit")
+                write!(f, "duration exceeds subsec_nanoseconds limit")
             }
             RoundingError::TimestampExceedsLimit => {
-                write!(f, "timestamp exceeds num_nanoseconds limit")
+                write!(f, "timestamp exceeds subsec_nanoseconds limit")
             }
         }
     }

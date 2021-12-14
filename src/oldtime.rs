@@ -145,23 +145,23 @@ impl Duration {
 
     /// Returns the total number of whole days in the duration.
     pub fn num_days(&self) -> i64 {
-        self.num_seconds() / SECS_PER_DAY
+        self.whole_seconds() / SECS_PER_DAY
     }
 
     /// Returns the total number of whole hours in the duration.
     #[inline]
     pub fn num_hours(&self) -> i64 {
-        self.num_seconds() / SECS_PER_HOUR
+        self.whole_seconds() / SECS_PER_HOUR
     }
 
     /// Returns the total number of whole minutes in the duration.
     #[inline]
     pub fn num_minutes(&self) -> i64 {
-        self.num_seconds() / SECS_PER_MINUTE
+        self.whole_seconds() / SECS_PER_MINUTE
     }
 
     /// Returns the total number of whole seconds in the duration.
-    pub fn num_seconds(&self) -> i64 {
+    pub fn whole_seconds(&self) -> i64 {
         // If secs is negative, nanos should be subtracted from the duration.
         if self.secs < 0 && self.nanos > 0 {
             self.secs + 1
@@ -171,7 +171,7 @@ impl Duration {
     }
 
     /// Returns the number of nanoseconds such that
-    /// `nanos_mod_sec() + num_seconds() * NANOS_PER_SEC` is the total number of
+    /// `nanos_mod_sec() + whole_seconds() * NANOS_PER_SEC` is the total number of
     /// nanoseconds in the duration.
     fn nanos_mod_sec(&self) -> i32 {
         if self.secs < 0 && self.nanos > 0 {
@@ -185,7 +185,7 @@ impl Duration {
     pub fn num_milliseconds(&self) -> i64 {
         // A proper Duration will not overflow, because MIN and MAX are defined
         // such that the range is exactly i64 milliseconds.
-        let secs_part = self.num_seconds() * MILLIS_PER_SEC;
+        let secs_part = self.whole_seconds() * MILLIS_PER_SEC;
         let nanos_part = self.nanos_mod_sec() / NANOS_PER_MILLI;
         secs_part + nanos_part as i64
     }
@@ -193,15 +193,15 @@ impl Duration {
     /// Returns the total number of whole microseconds in the duration,
     /// or `None` on overflow (exceeding 2^63 microseconds in either direction).
     pub fn num_microseconds(&self) -> Option<i64> {
-        let secs_part = try_opt!(self.num_seconds().checked_mul(MICROS_PER_SEC));
+        let secs_part = try_opt!(self.whole_seconds().checked_mul(MICROS_PER_SEC));
         let nanos_part = self.nanos_mod_sec() / NANOS_PER_MICRO;
         secs_part.checked_add(nanos_part as i64)
     }
 
     /// Returns the total number of whole nanoseconds in the duration,
     /// or `None` on overflow (exceeding 2^63 nanoseconds in either direction).
-    pub fn num_nanoseconds(&self) -> Option<i64> {
-        let secs_part = try_opt!(self.num_seconds().checked_mul(NANOS_PER_SEC as i64));
+    pub fn subsec_nanoseconds(&self) -> Option<i64> {
+        let secs_part = try_opt!(self.whole_seconds().checked_mul(NANOS_PER_SEC as i64));
         let nanos_part = self.nanos_mod_sec();
         secs_part.checked_add(nanos_part as i64)
     }
@@ -498,14 +498,14 @@ mod tests {
     }
 
     #[test]
-    fn test_duration_num_seconds() {
-        assert_eq!(Duration::zero().num_seconds(), 0);
-        assert_eq!(Duration::seconds(1).num_seconds(), 1);
-        assert_eq!(Duration::seconds(-1).num_seconds(), -1);
-        assert_eq!(Duration::milliseconds(999).num_seconds(), 0);
-        assert_eq!(Duration::milliseconds(1001).num_seconds(), 1);
-        assert_eq!(Duration::milliseconds(-999).num_seconds(), 0);
-        assert_eq!(Duration::milliseconds(-1001).num_seconds(), -1);
+    fn test_duration_whole_seconds() {
+        assert_eq!(Duration::zero().whole_seconds(), 0);
+        assert_eq!(Duration::seconds(1).whole_seconds(), 1);
+        assert_eq!(Duration::seconds(-1).whole_seconds(), -1);
+        assert_eq!(Duration::milliseconds(999).whole_seconds(), 0);
+        assert_eq!(Duration::milliseconds(1001).whole_seconds(), 1);
+        assert_eq!(Duration::milliseconds(-999).whole_seconds(), 0);
+        assert_eq!(Duration::milliseconds(-1001).whole_seconds(), -1);
     }
 
     #[test]
@@ -552,27 +552,27 @@ mod tests {
     }
 
     #[test]
-    fn test_duration_num_nanoseconds() {
-        assert_eq!(Duration::zero().num_nanoseconds(), Some(0));
-        assert_eq!(Duration::nanoseconds(1).num_nanoseconds(), Some(1));
-        assert_eq!(Duration::nanoseconds(-1).num_nanoseconds(), Some(-1));
-        assert_eq!(Duration::nanoseconds(i64::MAX).num_nanoseconds(), Some(i64::MAX));
-        assert_eq!(Duration::nanoseconds(i64::MIN).num_nanoseconds(), Some(i64::MIN));
-        assert_eq!(MAX.num_nanoseconds(), None);
-        assert_eq!(MIN.num_nanoseconds(), None);
+    fn test_duration_subsec_nanoseconds() {
+        assert_eq!(Duration::zero().subsec_nanoseconds(), Some(0));
+        assert_eq!(Duration::nanoseconds(1).subsec_nanoseconds(), Some(1));
+        assert_eq!(Duration::nanoseconds(-1).subsec_nanoseconds(), Some(-1));
+        assert_eq!(Duration::nanoseconds(i64::MAX).subsec_nanoseconds(), Some(i64::MAX));
+        assert_eq!(Duration::nanoseconds(i64::MIN).subsec_nanoseconds(), Some(i64::MIN));
+        assert_eq!(MAX.subsec_nanoseconds(), None);
+        assert_eq!(MIN.subsec_nanoseconds(), None);
 
         // overflow checks
         const NANOS_PER_DAY: i64 = 86400_000_000_000;
         assert_eq!(
-            Duration::days(i64::MAX / NANOS_PER_DAY).num_nanoseconds(),
+            Duration::days(i64::MAX / NANOS_PER_DAY).subsec_nanoseconds(),
             Some(i64::MAX / NANOS_PER_DAY * NANOS_PER_DAY)
         );
         assert_eq!(
-            Duration::days(i64::MIN / NANOS_PER_DAY).num_nanoseconds(),
+            Duration::days(i64::MIN / NANOS_PER_DAY).subsec_nanoseconds(),
             Some(i64::MIN / NANOS_PER_DAY * NANOS_PER_DAY)
         );
-        assert_eq!(Duration::days(i64::MAX / NANOS_PER_DAY + 1).num_nanoseconds(), None);
-        assert_eq!(Duration::days(i64::MIN / NANOS_PER_DAY - 1).num_nanoseconds(), None);
+        assert_eq!(Duration::days(i64::MAX / NANOS_PER_DAY + 1).subsec_nanoseconds(), None);
+        assert_eq!(Duration::days(i64::MIN / NANOS_PER_DAY - 1).subsec_nanoseconds(), None);
     }
 
     #[test]
