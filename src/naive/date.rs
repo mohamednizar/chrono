@@ -2203,7 +2203,7 @@ mod tests {
             assert_eq!(lhs.checked_sub_signed(-rhs), sum);
         }
 
-        check((2014, 1, 1), Duration::zero(), Some((2014, 1, 1)));
+        // check((2014, 1, 1), Duration::ZERO, Some((2014, 1, 1)));
         check((2014, 1, 1), Duration::seconds(86399), Some((2014, 1, 1)));
         // always round towards zero
         check((2014, 1, 1), Duration::seconds(-86399), Some((2014, 1, 1)));
@@ -2218,10 +2218,10 @@ mod tests {
         // overflow check
         check((0, 1, 1), Duration::days(MAX_DAYS_FROM_YEAR_0 as i64), Some((MAX_YEAR, 12, 31)));
         check((0, 1, 1), Duration::days(MAX_DAYS_FROM_YEAR_0 as i64 + 1), None);
-        check((0, 1, 1), Duration::max_value(), None);
+        check((0, 1, 1), Duration::MAX, None);
         check((0, 1, 1), Duration::days(MIN_DAYS_FROM_YEAR_0 as i64), Some((MIN_YEAR, 1, 1)));
         check((0, 1, 1), Duration::days(MIN_DAYS_FROM_YEAR_0 as i64 - 1), None);
-        check((0, 1, 1), Duration::min_value(), None);
+        check((0, 1, 1), Duration::MIN, None);
     }
 
     #[test]
@@ -2233,7 +2233,7 @@ mod tests {
             assert_eq!(rhs.signed_duration_since(lhs), -diff);
         }
 
-        check((2014, 1, 1), (2014, 1, 1), Duration::zero());
+        check((2014, 1, 1), (2014, 1, 1), Duration::ZERO);
         check((2014, 1, 2), (2014, 1, 1), Duration::days(1));
         check((2014, 12, 31), (2014, 1, 1), Duration::days(364));
         check((2015, 1, 3), (2014, 1, 1), Duration::days(365 + 2));

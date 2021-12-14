@@ -2336,12 +2336,12 @@ mod tests {
             Some((MAX_DATE.year(), 12, 31, 23, 59, 59)),
         );
         check((0, 1, 1, 0, 0, 0), max_days_from_year_0 + Duration::seconds(86_400), None);
-        check((0, 1, 1, 0, 0, 0), Duration::max_value(), None);
+        check((0, 1, 1, 0, 0, 0), Duration::MAX, None);
 
         let min_days_from_year_0 = MIN_DATE.signed_duration_since(NaiveDate::from_ymd(0, 1, 1));
         check((0, 1, 1, 0, 0, 0), min_days_from_year_0, Some((MIN_DATE.year(), 1, 1, 0, 0, 0)));
         check((0, 1, 1, 0, 0, 0), min_days_from_year_0 - Duration::seconds(1), None);
-        check((0, 1, 1, 0, 0, 0), Duration::min_value(), None);
+        check((0, 1, 1, 0, 0, 0), Duration::MIN, None);
     }
 
     #[test]
@@ -2350,7 +2350,7 @@ mod tests {
         let since = NaiveDateTime::signed_duration_since;
         assert_eq!(
             since(ymdhms(2014, 5, 6, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 9)),
-            Duration::zero()
+            Duration::ZERO
         );
         assert_eq!(
             since(ymdhms(2014, 5, 6, 7, 8, 10), ymdhms(2014, 5, 6, 7, 8, 9)),
