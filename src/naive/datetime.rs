@@ -2348,10 +2348,7 @@ mod tests {
     fn test_datetime_sub() {
         let ymdhms = |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).and_hms(h, n, s);
         let since = NaiveDateTime::signed_duration_since;
-        assert_eq!(
-            since(ymdhms(2014, 5, 6, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 9)),
-            Duration::ZERO
-        );
+        assert_eq!(since(ymdhms(2014, 5, 6, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 9)), Duration::ZERO);
         assert_eq!(
             since(ymdhms(2014, 5, 6, 7, 8, 10), ymdhms(2014, 5, 6, 7, 8, 9)),
             Duration::seconds(1)
