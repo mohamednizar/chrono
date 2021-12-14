@@ -96,7 +96,7 @@ fn span_for_digits(digits: u16) -> u32 {
 /// Extension trait for rounding or truncating a DateTime by a Duration.
 ///
 /// # Limitations
-/// Both rounding and truncating are done via [`Duration::num_nanoseconds`] and
+/// Both rounding and truncating are done via [`Duration::subsec_nanoseconds`] and
 /// [`DateTime::timestamp_nanos`]. This means that they will fail if either the
 /// `Duration` or the `DateTime` are too big to represented as nanoseconds. They
 /// will also fail if the `Duration` is bigger than the timestamp.
@@ -179,31 +179,33 @@ fn duration_round<T>(
 where
     T: Timelike + Add<Duration, Output = T> + Sub<Duration, Output = T>,
 {
-    if let Some(span) = duration.num_nanoseconds() {
-        if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
-            return Err(RoundingError::TimestampExceedsLimit);
-        }
-        let stamp = naive.timestamp_nanos();
-        if span > stamp.abs() {
-            return Err(RoundingError::DurationExceedsTimestamp);
-        }
-        let delta_down = stamp % span;
-        if delta_down == 0 {
-            Ok(original)
-        } else {
-            let (delta_up, delta_down) = if delta_down < 0 {
-                (delta_down.abs(), span - delta_down.abs())
-            } else {
-                (span - delta_down, delta_down)
-            };
-            if delta_up <= delta_down {
-                Ok(original + Duration::nanoseconds(delta_up))
-            } else {
-                Ok(original - Duration::nanoseconds(delta_down))
-            }
-        }
+    let span = duration.whole_nanoseconds();
+    if span > i64::MAX as i128 || span < i64::MIN as i128 {
+        return Err(RoundingError::DurationExceedsLimit);
+    }
+    let span = span as i64;
+
+    if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
+        return Err(RoundingError::TimestampExceedsLimit);
+    }
+    let stamp = naive.timestamp_nanos();
+    if span > stamp.abs() {
+        return Err(RoundingError::DurationExceedsTimestamp);
+    }
+    let delta_down = stamp % span;
+    if delta_down == 0 {
+        Ok(original)
     } else {
-        Err(RoundingError::DurationExceedsLimit)
+        let (delta_up, delta_down) = if delta_down < 0 {
+            (delta_down.abs(), span - delta_down.abs())
+        } else {
+            (span - delta_down, delta_down)
+        };
+        if delta_up <= delta_down {
+            Ok(original + Duration::nanoseconds(delta_up))
+        } else {
+            Ok(original - Duration::nanoseconds(delta_down))
+        }
     }
 }
 
@@ -215,22 +217,24 @@ fn duration_trunc<T>(
 where
     T: Timelike + Add<Duration, Output = T> + Sub<Duration, Output = T>,
 {
-    if let Some(span) = duration.num_nanoseconds() {
-        if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
-            return Err(RoundingError::TimestampExceedsLimit);
-        }
-        let stamp = naive.timestamp_nanos();
-        if span > stamp.abs() {
-            return Err(RoundingError::DurationExceedsTimestamp);
-        }
-        let delta_down = stamp % span;
-        match delta_down.cmp(&0) {
-            Ordering::Equal => Ok(original),
-            Ordering::Greater => Ok(original - Duration::nanoseconds(delta_down)),
-            Ordering::Less => Ok(original - Duration::nanoseconds(span - delta_down.abs())),
-        }
-    } else {
-        Err(RoundingError::DurationExceedsLimit)
+    let span = duration.whole_nanoseconds();
+    if span > i64::MAX as i128 || span < i64::MIN as i128 {
+        return Err(RoundingError::DurationExceedsLimit);
+    }
+    let span = span as i64;
+
+    if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
+        return Err(RoundingError::TimestampExceedsLimit);
+    }
+    let stamp = naive.timestamp_nanos();
+    if span > stamp.abs() {
+        return Err(RoundingError::DurationExceedsTimestamp);
+    }
+    let delta_down = stamp % span;
+    match delta_down.cmp(&0) {
+        Ordering::Equal => Ok(original),
+        Ordering::Greater => Ok(original - Duration::nanoseconds(delta_down)),
+        Ordering::Less => Ok(original - Duration::nanoseconds(span - delta_down.abs())),
     }
 }
 
@@ -252,7 +256,7 @@ pub enum RoundingError {
     /// ```
     DurationExceedsTimestamp,
 
-    /// Error when `Duration.num_nanoseconds` exceeds the limit.
+    /// Error when `Duration.subsec_nanoseconds` exceeds the limit.
     ///
     /// ``` rust
     /// # use chrono::{DateTime, DurationRound, Duration, RoundingError, TimeZone, Utc};
@@ -283,10 +287,10 @@ impl fmt::Display for RoundingError {
                 write!(f, "duration in nanoseconds exceeds timestamp")
             }
             RoundingError::DurationExceedsLimit => {
-                write!(f, "duration exceeds num_nanoseconds limit")
+                write!(f, "duration exceeds subsec_nanoseconds limit")
             }
             RoundingError::TimestampExceedsLimit => {
-                write!(f, "timestamp exceeds num_nanoseconds limit")
+                write!(f, "timestamp exceeds subsec_nanoseconds limit")
             }
         }
     }

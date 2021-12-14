@@ -1426,7 +1426,7 @@ pub trait Timelike: Sized {
 
     /// Returns the number of non-leap seconds past the last midnight.
     #[inline]
-    fn num_seconds_from_midnight(&self) -> u32 {
+    fn whole_seconds_from_midnight(&self) -> u32 {
         self.hour() * 3600 + self.minute() * 60 + self.second()
     }
 }

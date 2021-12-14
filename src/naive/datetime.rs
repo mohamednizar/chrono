@@ -56,7 +56,7 @@ pub const MAX_DATETIME: NaiveDateTime = NaiveDateTime { date: MAX_DATE, time: MA
 /// use chrono::{Datelike, Timelike, Weekday};
 ///
 /// assert_eq!(dt.weekday(), Weekday::Fri);
-/// assert_eq!(dt.num_seconds_from_midnight(), 33011);
+/// assert_eq!(dt.whole_seconds_from_midnight(), 33011);
 /// ```
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 pub struct NaiveDateTime {
@@ -149,7 +149,7 @@ impl NaiveDateTime {
             .to_i32()
             .and_then(|days| days.checked_add(719_163))
             .and_then(NaiveDate::from_num_days_from_ce_opt);
-        let time = NaiveTime::from_num_seconds_from_midnight_opt(secs as u32, nsecs);
+        let time = NaiveTime::from_whole_seconds_from_midnight_opt(secs as u32, nsecs);
         match (date, time) {
             (Some(date), Some(time)) => Some(NaiveDateTime { date: date, time: time }),
             (_, _) => None,
@@ -279,7 +279,7 @@ impl NaiveDateTime {
     pub fn timestamp(&self) -> i64 {
         const UNIX_EPOCH_DAY: i64 = 719_163;
         let gregorian_day = i64::from(self.date.num_days_from_ce());
-        let seconds_from_midnight = i64::from(self.time.num_seconds_from_midnight());
+        let seconds_from_midnight = i64::from(self.time.whole_seconds_from_midnight());
         (gregorian_day - UNIX_EPOCH_DAY) * 86_400 + seconds_from_midnight
     }
 
@@ -514,14 +514,19 @@ impl NaiveDateTime {
     /// # }
     /// ```
     pub fn checked_add_signed(self, rhs: OldDuration) -> Option<NaiveDateTime> {
-        let (time, rhs) = self.time.overflowing_add_signed(rhs);
-
-        // early checking to avoid overflow in OldDuration::seconds
-        if rhs <= (-1 << MAX_SECS_BITS) || rhs >= (1 << MAX_SECS_BITS) {
+        // early checking to avoid overflow in overflowing_add_signed
+        let rhs_secs = rhs.whole_seconds();
+        if rhs_secs <= (-1 << MAX_SECS_BITS) || rhs_secs >= (1 << MAX_SECS_BITS) {
             return None;
         }
 
-        let date = try_opt!(self.date.checked_add_signed(OldDuration::seconds(rhs)));
+        let (time, rem_secs) = self.time.overflowing_add_signed(rhs);
+        // check again to avoid overflow in OldDuration::seconds
+        if rem_secs <= (-1 << MAX_SECS_BITS) || rem_secs >= (1 << MAX_SECS_BITS) {
+            return None;
+        }
+
+        let date = try_opt!(self.date.checked_add_signed(OldDuration::seconds(rem_secs)));
         Some(NaiveDateTime { date: date, time: time })
     }
 
@@ -2331,22 +2336,19 @@ mod tests {
             Some((MAX_DATE.year(), 12, 31, 23, 59, 59)),
         );
         check((0, 1, 1, 0, 0, 0), max_days_from_year_0 + Duration::seconds(86_400), None);
-        check((0, 1, 1, 0, 0, 0), Duration::max_value(), None);
+        check((0, 1, 1, 0, 0, 0), Duration::MAX, None);
 
         let min_days_from_year_0 = MIN_DATE.signed_duration_since(NaiveDate::from_ymd(0, 1, 1));
         check((0, 1, 1, 0, 0, 0), min_days_from_year_0, Some((MIN_DATE.year(), 1, 1, 0, 0, 0)));
         check((0, 1, 1, 0, 0, 0), min_days_from_year_0 - Duration::seconds(1), None);
-        check((0, 1, 1, 0, 0, 0), Duration::min_value(), None);
+        check((0, 1, 1, 0, 0, 0), Duration::MIN, None);
     }
 
     #[test]
     fn test_datetime_sub() {
         let ymdhms = |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).and_hms(h, n, s);
         let since = NaiveDateTime::signed_duration_since;
-        assert_eq!(
-            since(ymdhms(2014, 5, 6, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 9)),
-            Duration::zero()
-        );
+        assert_eq!(since(ymdhms(2014, 5, 6, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 9)), Duration::ZERO);
         assert_eq!(
             since(ymdhms(2014, 5, 6, 7, 8, 10), ymdhms(2014, 5, 6, 7, 8, 9)),
             Duration::seconds(1)
@@ -2509,7 +2511,7 @@ mod tests {
         let base = NaiveDate::from_ymd(2000, 1, 1).and_hms(0, 0, 0);
         let t = -946684799990000;
         let time = base + Duration::microseconds(t);
-        assert_eq!(t, time.signed_duration_since(base).num_microseconds().unwrap());
+        assert_eq!(t, time.signed_duration_since(base).whole_microseconds() as i64);
     }
 
     #[test]
